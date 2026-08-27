@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智启新程 - 智能学情诊断系统</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;background:#f5f7fa;color:#333}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+
+/* 登录页 */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:20px}
+.login-card{background:white;border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.login-title{text-align:center;font-size:28px;font-weight:700;color:#2c3e50;margin-bottom:8px}
+.login-subtitle{text-align:center;color:#7f8c8d;margin-bottom:28px;font-size:14px}
+.role-tabs{display:flex;margin-bottom:20px;background:#f0f2f5;border-radius:8px;padding:4px;gap:4px}
+.role-tab{flex:1;text-align:center;padding:10px;border-radius:6px;cursor:pointer;font-size:14px;color:#666;transition:all .3s}
+.role-tab.active{background:white;color:#667eea;font-weight:600;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;margin-bottom:6px;font-weight:500;color:#34495e;font-size:14px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:12px 16px;border:1px solid #e0e6ed;border-radius:8px;font-size:15px;transition:border-color .3s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#667eea}
+.btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;transition:transform .2s}
+.btn-primary:hover{transform:translateY(-1px)}
+.login-footer{margin-top:20px;text-align:center;font-size:14px;color:#7f8c8d}
+.login-footer a{color:#667eea;cursor:pointer}
+.demo-accounts{margin-top:20px;padding-top:16px;border-top:1px solid #eee}
+.demo-accounts h4{font-size:13px;color:#666;margin-bottom:10px;font-weight:500}
+.demo-list{display:flex;flex-wrap:wrap;gap:8px}
+.demo-item{padding:6px 12px;background:#f0f7ff;color:#409eff;border-radius:20px;font-size:12px;cursor:pointer}
+
+/* 导航 */
+.navbar{background:white;box-shadow:0 2px 8px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.navbar-inner{max-width:1200px;margin:0 auto;padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:20px;font-weight:700;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-menu{display:flex;gap:8px}
+.nav-item{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;color:#666;transition:all .3s}
+.nav-item:hover{background:#f5f7fa}
+.nav-item.active{background:#eef1ff;color:#667eea;font-weight:600}
+.user-info{display:flex;align-items:center;gap:12px;font-size:14px;color:#666}
+.logout-btn{padding:6px 12px;border:1px solid #e0e6ed;border-radius:6px;background:white;cursor:pointer;font-size:13px;color:#666}
+.logout-btn:hover{border-color:#667eea;color:#667eea}
+
+/* 内容 */
+.main-content{max-width:1200px;margin:0 auto;padding:24px 20px}
+.card{background:white;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.04);margin-bottom:20px}
+.card-title{font-size:18px;font-weight:600;margin-bottom:20px;color:#2c3e50}
+
+/* 热力图 */
+.heatmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+.heatmap-item{padding:16px 12px;border-radius:8px;text-align:center;cursor:pointer;transition:transform .2s}
+.heatmap-item:hover{transform:translateY(-2px)}
+.heatmap-item .kp-name{font-size:14px;font-weight:500;margin-bottom:4px}
+.heatmap-item .kp-score{font-size:20px;font-weight:700}
+.level-red{background:#fee2e2;color:#dc2626}
+.level-yellow{background:#fef3c7;color:#d97706}
+.level-green{background:#dcfce7;color:#16a34a}
+
+/* 图表 */
+.chart-container{width:100%;height:320px}
+
+/* 错题 */
+.wrong-list{display:flex;flex-direction:column;gap:12px}
+.wrong-item{padding:16px;border:1px solid #eef0f3;border-radius:8px}
+.wrong-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+.wrong-tag{padding:2px 8px;border-radius:4px;font-size:12px;background:#eef1ff;color:#667eea}
+.wrong-content{font-size:14px;line-height:1.6;margin-bottom:8px}
+.wrong-meta{font-size:12px;color:#999;display:flex;gap:16px;flex-wrap:wrap}
+
+/* 教师三入口 */
+.teacher-entries{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:24px}
+.entry-card{padding:32px 24px;background:white;border-radius:12px;text-align:center;cursor:pointer;transition:all .3s;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.entry-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
+.entry-icon{width:64px;height:64px;border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;color:white}
+.entry-icon.orange{background:linear-gradient(135deg,#ff9a56 0%,#ff6b35 100%)}
+.entry-icon.blue{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
+.entry-icon.gray{background:linear-gradient(135deg,#94a3b8 0%,#64748b 100%)}
+.entry-title{font-size:18px;font-weight:600;margin-bottom:4px}
+.entry-desc{font-size:13px;color:#999}
+
+/* 按钮 */
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:500;transition:all .3s}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn-outline{border:1px solid #e0e6ed;background:white;color:#666}
+.btn-outline:hover{border-color:#667eea;color:#667eea}
+.btn-success{background:#10b981;color:white}
+.btn-danger{background:#ef4444;color:white}
+.btn-primary-inline{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;width:auto}
+
+/* 表格 */
+.data-table{width:100%;border-collapse:collapse}
+.data-table th,.data-table td{padding:12px;text-align:left;border-bottom:1px solid #eee;font-size:14px}
+.data-table th{background:#f8f9fa;font-weight:600;color:#555}
+
+/* 语音按钮 */
+.voice-btn{position:fixed;bottom:30px;right:30px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 12px rgba(102,126,234,.4);z-index:99}
+.voice-btn.listening{animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(102,126,234,.7)}50%{box-shadow:0 0 0 15px rgba(102,126,234,0)}}
+
+/* 弹窗 */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:white;border-radius:12px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal-header{padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:12px}
+.option-item{padding:12px 16px;border:1px solid #e0e6ed;border-radius:8px;cursor:pointer;margin-bottom:10px;transition:all .3s}
+.option-item:hover{border-color:#667eea;background:#f8f9ff}
+.option-item.selected{border-color:#667eea;background:#eef1ff}
+.option-item.correct{border-color:#16a34a;background:#f0fdf4}
+.option-item.wrong{border-color:#ef4444;background:#fef2f2}
+.analysis-box{padding:16px;background:#f8f9ff;border-radius:8px;margin-top:16px}
+
+/* 统计卡片 */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.stat-card{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.stat-card .stat-label{font-size:13px;color:#999;margin-bottom:8px}
+.stat-card .stat-value{font-size:28px;font-weight:700;color:#2c3e50}
+
+/* 空状态 */
+.empty-state{text-align:center;padding:40px;color:#999}
+
+/* 做题页 */
+.practice-page{max-width:700px;margin:40px auto;padding:20px}
+.progress-bar{height:6px;background:#e0e6ed;border-radius:3px;overflow:hidden;margin-bottom:20px}
+.progress-fill{height:100%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);transition:width .3s}
+
+/* 拍照录入 */
+.camera-box{width:100%;max-height:300px;background:#000;border-radius:8px;overflow:hidden;margin-bottom:12px}
+.camera-box video,.camera-box img{width:100%;display:block}
+.ocr-steps{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.ocr-step{flex:1;min-width:80px;padding:10px;text-align:center;border-radius:8px;font-size:13px;background:#f0f2f5;color:#999}
+.ocr-step.active{background:#eef1ff;color:#667eea;font-weight:600}
+.ocr-step.done{background:#dcfce7;color:#16a34a}
+
+/* 教师端大字体模式 */
+.teacher-mode .card-title{font-size:20px}
+.teacher-mode .data-table th,.teacher-mode .data-table td{font-size:16px;padding:14px}
+.teacher-mode .btn{min-height:48px;font-size:15px}
+.teacher-mode .form-group label{font-size:16px}
+.teacher-mode .form-group input,.teacher-mode .form-group select,.teacher-mode .form-group textarea{font-size:16px;padding:14px}
+
+/* 响应式 */
+@media(max-width:768px){
+  .teacher-entries{grid-template-columns:1fr}
+  .heatmap-grid{grid-template-columns:repeat(2,1fr)}
+  .navbar-inner{padding:0 16px}
+  .main-content{padding:16px}
+  .entry-card{padding:24px 16px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .nav-item{padding:8px 10px;font-size:13px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ==================== 数据层（localStorage） ====================
+const DB = {
+  get(key, def) { try { return JSON.parse(localStorage.getItem('zqxc_' + key)) || def; } catch { return def; } },
+  set(key, val) { localStorage.setItem('zqxc_' + key, JSON.stringify(val)); },
+  nextId(key) { const items = this.get(key, []); return items.length ? Math.max(...items.map(i => i.id)) + 1 : 1; },
+  init() {
+    if (this.get('inited')) return;
+    this.set('users', [
+      { id: 1, username: 'teacher', password: '123456', role: 'teacher', realName: '王老师' },
+      { id: 2, username: 'stu1', password: '123456', role: 'student', realName: '李明' },
+      { id: 3, username: 'stu2', password: '123456', role: 'student', realName: '张小雨' },
+      { id: 4, username: 'stu3', password: '123456', role: 'student', realName: '陈志远' },
+    ]);
+    this.set('classes', [{ id: 1, classCode: '202602', className: '高二理科实验班', teacherId: 1 }]);
+    this.set('classStudents', [{ classId: 1, studentId: 2 }, { classId: 1, studentId: 3 }, { classId: 1, studentId: 4 }]);
+    this.set('knowledge', [
+      { id: 1, subject: '数学', name: '函数与导数' },
+      { id: 2, subject: '数学', name: '立体几何' },
+      { id: 3, subject: '数学', name: '数列' },
+      { id: 4, subject: '数学', name: '解析几何' },
+      { id: 5, subject: '数学', name: '概率统计' },
+      { id: 6, subject: '物理', name: '电磁感应' },
+      { id: 7, subject: '物理', name: '力学与牛顿定律' },
+      { id: 8, subject: '物理', name: '电路分析' },
+      { id: 9, subject: '物理', name: '光学与原子物理' },
+      { id: 10, subject: '化学', name: '化学平衡' },
+      { id: 11, subject: '化学', name: '有机化学' },
+      { id: 12, subject: '化学', name: '电化学' },
+      { id: 13, subject: '英语', name: '阅读理解' },
+      { id: 14, subject: '英语', name: '从句结构' },
+      { id: 15, subject: '英语', name: '完形填空' },
+    ]);
+    this.set('questions', [
+      { id: 1, subject: '物理', type: 'single', difficulty: 'medium', content: '关于电磁感应现象，下列说法正确的是？', options: { A: '只要闭合电路中有磁通量，电路中就一定有感应电流', B: '只要闭合电路的一部分导体做切割磁感线运动，电路中就一定有感应电流', C: '只要穿过闭合电路的磁通量发生变化，电路中就一定有感应电流', D: '只要导体在磁场中运动，导体中就一定有感应电动势' }, answer: 'C', analysis: '感应电流产生的条件是穿过闭合电路的磁通量发生变化。A磁通量不变则无感应电流；B若整个闭合电路都在匀强磁场中平动切割，磁通量不变也无感应电流；D导体不闭合时只有感应电动势没有感应电流。', knowledgeIds: [6] },
+      { id: 2, subject: '数学', type: 'single', difficulty: 'medium', content: '正方体的棱长为2，则其外接球的体积为？', options: { A: '8√2π/3', B: '4√3π', C: '8√3π', D: '32√3π/3' }, answer: 'B', analysis: '正方体外接球直径等于体对角线长。棱长为2，体对角线长为2√3，半径R=√3，体积V=4/3πR³=4√3π。', knowledgeIds: [2] },
+      { id: 3, subject: '数学', type: 'single', difficulty: 'easy', content: '函数f(x)=x³-3x的极大值点是？', options: { A: 'x=-1', B: 'x=0', C: 'x=1', D: 'x=2' }, answer: 'A', analysis: '求导f\'(x)=3x²-3，令f\'(x)=0得x=±1。x<-1时f\'(x)>0，-1<x<1时f\'(x)<0，故x=-1为极大值点。', knowledgeIds: [1] },
+      { id: 4, subject: '化学', type: 'single', difficulty: 'easy', content: '下列物质中属于烃的是？', options: { A: '乙醇', B: '苯', C: '乙酸', D: '乙醛' }, answer: 'B', analysis: '烃是只含碳氢两种元素的有机化合物。苯分子式为C₆H₆，只含C、H，属于烃。', knowledgeIds: [11] },
+      { id: 5, subject: '物理', type: 'single', difficulty: 'medium', content: 'N极快速插入闭合线圈时，从线圈正上方俯视，感应电流方向为？', options: { A: '逆时针', B: '顺时针', C: '无感应电流', D: '先顺后逆' }, answer: 'A', analysis: '楞次定律：感应电流磁场阻碍磁通量增加。N极插入使线圈内磁场向下增强，感应电流磁场应向上，由安培定则得俯视逆时针。', knowledgeIds: [6] },
+      { id: 6, subject: '数学', type: 'single', difficulty: 'medium', content: '等差数列{aₙ}中a₃=7、a₇=15，则公差d为？', options: { A: '1', B: '1.5', C: '2', D: '3' }, answer: 'C', analysis: 'a₇−a₃=4d=8，故d=2。', knowledgeIds: [3] },
+      { id: 7, subject: '英语', type: 'single', difficulty: 'easy', content: 'The book ___ I bought yesterday is very interesting.', options: { A: 'who', B: 'which', C: 'whose', D: 'whom' }, answer: 'B', analysis: '先行词the book指物，在定语从句中作bought的宾语，用which。', knowledgeIds: [14] },
+      { id: 8, subject: '化学', type: 'single', difficulty: 'medium', content: '对反应N₂+3H₂⇌2NH₃（正反应放热），增大压强平衡向哪个方向移动？', options: { A: '正向', B: '逆向', C: '不移动', D: '无法判断' }, answer: 'A', analysis: '勒夏特列原理：增大压强平衡向气体分子数减小的方向移动，正方向分子数4→2减少，故正向移动。', knowledgeIds: [10] },
+      { id: 9, subject: '物理', type: 'single', difficulty: 'easy', content: '一个物体做自由落体运动，下落2秒时的速度为（g取10m/s²）？', options: { A: '10m/s', B: '20m/s', C: '30m/s', D: '40m/s' }, answer: 'B', analysis: '自由落体速度v=gt=10×2=20m/s。', knowledgeIds: [7] },
+      { id: 10, subject: '数学', type: 'single', difficulty: 'hard', content: '已知椭圆x²/25+y²/16=1的左右焦点为F₁,F₂，点P在椭圆上，则|PF₁|+|PF₂|=？', options: { A: '8', B: '10', C: '12', D: '5' }, answer: 'B', analysis: '椭圆定义：|PF₁|+|PF₂|=2a，由方程知a²=25，a=5，故2a=10。', knowledgeIds: [4] },
+      { id: 11, subject: '化学', type: 'single', difficulty: 'medium', content: '下列关于原电池的说法正确的是？', options: { A: '原电池将电能转化为化学能', B: '原电池负极发生还原反应', C: '原电池正极发生氧化反应', D: '原电池将化学能转化为电能' }, answer: 'D', analysis: '原电池是将化学能转化为电能的装置。负极发生氧化反应，正极发生还原反应。', knowledgeIds: [12] },
+      { id: 12, subject: '物理', type: 'single', difficulty: 'medium', content: '在闭合电路中，当外电阻增大时，路端电压将？', options: { A: '增大', B: '减小', C: '不变', D: '先增后减' }, answer: 'A', analysis: '路端电压U=E-Ir，外电阻增大时电流I减小，Ir减小，故U=E-Ir增大。', knowledgeIds: [8] },
+      { id: 13, subject: '数学', type: 'single', difficulty: 'medium', content: '从1,2,3,4,5中随机取3个不同的数，这3个数能构成等差数列的概率是？', options: { A: '1/5', B: '2/5', C: '3/10', D: '1/2' }, answer: 'C', analysis: '总取法C(5,3)=10种。能构成等差数列的有{1,2,3},{2,3,4},{3,4,5},{1,3,5}共4种？实际只有前3个公差为1和1个公差为2，共4种，概率4/10=2/5。注意：{1,3,5}公差为2也是等差数列，所以共4种，概率4/10=2/5。', knowledgeIds: [5] },
+      { id: 14, subject: '英语', type: 'single', difficulty: 'medium', content: 'If I ___ you, I would accept the offer.', options: { A: 'am', B: 'was', C: 'were', D: 'be' }, answer: 'C', analysis: '虚拟语气中，if引导的非真实条件句，be动词一律用were。', knowledgeIds: [14] },
+      { id: 15, subject: '物理', type: 'single', difficulty: 'easy', content: '光从空气射入水中，下列说法正确的是？', options: { A: '频率变小，波长变小', B: '频率不变，波长变小', C: '频率变大，波长变大', D: '频率不变，波长变大' }, answer: 'B', analysis: '光从光疏介质进入光密介质，频率不变，波速减小，由λ=v/f可知波长变小。', knowledgeIds: [9] },
+      { id: 16, subject: '化学', type: 'single', difficulty: 'easy', content: '下列有机物中能发生银镜反应的是？', options: { A: '乙醇', B: '乙醛', C: '乙酸', D: '乙酸乙酯' }, answer: 'B', analysis: '银镜反应是醛基的特征反应，乙醛含有醛基，能发生银镜反应。', knowledgeIds: [11] },
+      { id: 17, subject: '数学', type: 'single', difficulty: 'medium', content: '函数y=ln(x-1)的定义域是？', options: { A: 'x>0', B: 'x>1', C: 'x≥1', D: 'x≥0' }, answer: 'B', analysis: '对数函数要求真数大于0，即x-1>0，所以x>1。', knowledgeIds: [1] },
+      { id: 18, subject: '物理', type: 'single', difficulty: 'medium', content: '质量为2kg的物体在水平面上受到10N的水平拉力，摩擦因数为0.2，加速度为（g=10m/s²）？', options: { A: '3m/s²', B: '4m/s²', C: '5m/s²', D: '2m/s²' }, answer: 'A', analysis: '摩擦力f=μmg=0.2×2×10=4N，合力F=10-4=6N，加速度a=F/m=6/2=3m/s²。', knowledgeIds: [7] },
+      { id: 19, subject: '英语', type: 'single', difficulty: 'easy', content: 'He suggested that we ___ early.', options: { A: 'start', B: 'started', C: 'starting', D: 'to start' }, answer: 'A', analysis: 'suggest后的宾语从句用虚拟语气，谓语用(should)+动词原形，should可省略。', knowledgeIds: [14] },
+      { id: 20, subject: '化学', type: 'single', difficulty: 'medium', content: '下列溶液中pH最小的是？', options: { A: '0.1mol/L盐酸', B: '0.1mol/L醋酸', C: '0.1mol/L氢氧化钠', D: '0.1mol/L氯化钠' }, answer: 'A', analysis: '盐酸是强酸完全电离，0.1mol/L盐酸pH=1；醋酸是弱酸部分电离pH>1；氢氧化钠是强碱pH>7；氯化钠中性pH=7。', knowledgeIds: [10] },
+    ]);
+    this.set('wrongs', []);
+    this.set('assignments', []);
+    this.set('submissions', []);
+    this.set('scores', []);
+    this.set('practiceRecords', []);
+    this.set('studyTime', []);
+    this.set('inited', true);
+  }
+};
+DB.init();
+
+let currentUser = DB.get('currentUser', null);
+let currentPage = 'login';
+let pageState = {};
+
+function navigate(page, state = {}) {
+  currentPage = page;
+  pageState = state;
+  window.scrollTo(0, 0);
+  render();
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (!currentUser) {
+    app.innerHTML = currentPage === 'register' ? renderRegister() : renderLogin();
+    bindAuthEvents();
+  } else if (currentUser.role === 'student') {
+    app.innerHTML = '<div class="student-mode">' + renderStudentLayout() + '</div>';
+    bindStudentEvents();
+  } else {
+    app.innerHTML = '<div class="teacher-mode">' + renderTeacherLayout() + '</div>';
+    bindTeacherEvents();
+  }
+}
+
+// ==================== 登录/注册 ====================
+function renderLogin() {
+  return `<div class="login-page"><div class="login-card">
+    <div class="login-title">智启新程</div>
+    <div class="login-subtitle">智能学情诊断与错题管理系统</div>
+    <div class="form-group"><label>账号</label><input id="loginUser" placeholder="请输入账号" /></div>
+    <div class="form-group"><label>密码</label><input id="loginPwd" type="password" placeholder="请输入密码" /></div>
+    <div id="loginError" style="color:#ef4444;font-size:13px;margin-bottom:12px;display:none"></div>
+    <button class="btn-primary" onclick="doLogin()">登 录</button>
+    <div class="login-footer">还没有账号？<a onclick="navigate('register')">立即注册</a></div>
+    <div class="demo-accounts"><h4>演示账号（密码均为123456）</h4>
+      <div class="demo-list">
+        <span class="demo-item" onclick="fillDemo('teacher','123456')">教师 teacher</span>
+        <span class="demo-item" onclick="fillDemo('stu1','123456')">学生 stu1</span>
+        <span class="demo-item" onclick="fillDemo('stu2','123456')">学生 stu2</span>
+        <span class="demo-item" onclick="fillDemo('stu3','123456')">学生 stu3</span>
+      </div></div>
+  </div></div>`;
+}
+
+function renderRegister() {
+  return `<div class="login-page"><div class="login-card">
+    <div class="login-title">注册账号</div>
+    <div class="login-subtitle">加入智启新程，开启智能学习之旅</div>
+    <div class="role-tabs">
+      <div class="role-tab active" id="roleStudent" onclick="setRole('student')">我是学生</div>
+      <div class="role-tab" id="roleTeacher" onclick="setRole('teacher')">我是老师</div>
+    </div>
+    <div class="form-group"><label>真实姓名</label><input id="regName" placeholder="请输入真实姓名" /></div>
+    <div class="form-group"><label>账号</label><input id="regUser" placeholder="设置登录账号" /></div>
+    <div class="form-group"><label>密码</label><input id="regPwd" type="password" placeholder="至少6位" /></div>
+    <div class="form-group" id="inviteGroup"><label>班级邀请码（选填）</label><input id="regInvite" placeholder="如 202602" /></div>
+    <div id="regError" style="color:#ef4444;font-size:13px;margin-bottom:12px;display:none"></div>
+    <button class="btn-primary" onclick="doRegister()">注 册</button>
+    <div class="login-footer">已有账号？<a onclick="navigate('login')">返回登录</a></div>
+  </div></div>`;
+}
+
+let regRole = 'student';
+function setRole(r) {
+  regRole = r;
+  document.getElementById('roleStudent').classList.toggle('active', r === 'student');
+  document.getElementById('roleTeacher').classList.toggle('active', r === 'teacher');
+  document.getElementById('inviteGroup').style.display = r === 'student' ? 'block' : 'none';
+}
+function fillDemo(u, p) { document.getElementById('loginUser').value = u; document.getElementById('loginPwd').value = p; }
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPwd').value;
+  const user = DB.get('users', []).find(x => x.username === u && x.password === p);
+  if (!user) { const e = document.getElementById('loginError'); e.textContent = '用户名或密码错误'; e.style.display = 'block'; return; }
+  currentUser = user;
+  DB.set('currentUser', user);
+  navigate(user.role === 'teacher' ? 'teacher-home' : 'student-learning');
+}
+
+function doRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const u = document.getElementById('regUser').value.trim();
+  const p = document.getElementById('regPwd').value;
+  const invite = document.getElementById('regInvite').value.trim();
+  if (!name || !u || !p) { showRegError('请填写完整信息'); return; }
+  if (p.length < 6) { showRegError('密码至少6位'); return; }
+  const users = DB.get('users', []);
+  if (users.find(x => x.username === u)) { showRegError('用户名已存在'); return; }
+  const id = DB.nextId('users');
+  const user = { id, username: u, password: p, role: regRole, realName: name };
+  users.push(user); DB.set('users', users);
+  if (regRole === 'teacher') {
+    const classes = DB.get('classes', []);
+    classes.push({ id: DB.nextId('classes'), classCode: '2026' + Math.floor(1000 + Math.random() * 9000), className: name + '的班级', teacherId: id });
+    DB.set('classes', classes);
+  } else if (invite) {
+    const cls = DB.get('classes', []).find(c => c.classCode === invite);
+    if (cls) { const cs = DB.get('classStudents', []); cs.push({ classId: cls.id, studentId: id }); DB.set('classStudents', cs); }
+  }
+  currentUser = user; DB.set('currentUser', user);
+  navigate(regRole === 'teacher' ? 'teacher-home' : 'student-learning');
+}
+function showRegError(msg) { const e = document.getElementById('regError'); e.textContent = msg; e.style.display = 'block'; }
+function logout() { currentUser = null; DB.set('currentUser', null); navigate('login'); }
+function bindAuthEvents() {
+  document.querySelectorAll('#loginUser,#loginPwd').forEach(i => i.addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); }));
+}
+
+// ==================== 学生端 ====================
+function renderStudentLayout() {
+  const cls = getStudentClass();
+  const navs = [
+    { page: 'student-learning', label: '📊 学情' },
+    { page: 'student-wrong', label: '📝 错题' },
+    { page: 'student-tasks', label: '📋 任务' },
+    { page: 'student-settings', label: '⚙️ 设置' },
+  ];
+  return `<nav class="navbar"><div class="navbar-inner">
+    <div class="logo">智启新程</div>
+    <div class="nav-menu">${navs.map(n => `<div class="nav-item ${currentPage === n.page ? 'active' : ''}" onclick="navigate('${n.page}')">${n.label}</div>`).join('')}</div>
+    <div class="user-info"><span>${currentUser.realName}（学生）</span>${cls ? `<span style="color:#999">${cls.className}</span>` : ''}<button class="logout-btn" onclick="logout()">退出</button></div>
+  </div></nav><div class="main-content">${renderStudentPage()}</div>${renderVoiceBtn()}`;
+}
+
+function getStudentClass() {
+  const cs = DB.get('classStudents', []).find(c => c.studentId === currentUser.id);
+  return cs ? DB.get('classes', []).find(c => c.id === cs.classId) : null;
+}
+
+function renderStudentPage() {
+  switch (currentPage) {
+    case 'student-learning': return renderStudentLearning();
+    case 'student-wrong': return renderStudentWrong();
+    case 'student-tasks': return renderStudentTasks();
+    case 'student-settings': return renderStudentSettings();
+    case 'practice': return renderPractice();
+    default: return renderStudentLearning();
+  }
+}
+
+function getStudentMastery() {
+  const kps = DB.get('knowledge', []);
+  const records = DB.get('practiceRecords', []).filter(r => r.studentId === currentUser.id);
+  return kps.map(kp => {
+    const qIds = DB.get('questions', []).filter(q => q.knowledgeIds?.includes(kp.id)).map(q => q.id);
+    const rel = records.filter(r => qIds.includes(r.questionId));
+    return { ...kp, mastery: rel.length ? Math.round(rel.filter(r => r.isCorrect).length / rel.length * 100) : 60, total: rel.length, correct: rel.filter(r => r.isCorrect).length };
+  });
+}
+
+function renderStudentLearning() {
+  const mastery = getStudentMastery();
+  const bySubject = {};
+  mastery.forEach(m => { if (!bySubject[m.subject]) bySubject[m.subject] = []; bySubject[m.subject].push(m); });
+  const weak = mastery.filter(m => m.mastery < 50).length;
+  const avg = mastery.length ? Math.round(mastery.reduce((s, m) => s + m.mastery, 0) / mastery.length) : 0;
+  const wrongs = DB.get('wrongs', []).filter(w => w.studentId === currentUser.id);
+  const due = wrongs.filter(w => !w.nextReview || new Date(w.nextReview) <= new Date());
+
+  let html = `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">知识点总数</div><div class="stat-value">${mastery.length}</div></div>
+    <div class="stat-card"><div class="stat-label">薄弱知识点</div><div class="stat-value" style="color:#ef4444">${weak}</div></div>
+    <div class="stat-card"><div class="stat-label">平均掌握度</div><div class="stat-value" style="color:#667eea">${avg}%</div></div>
+    <div class="stat-card"><div class="stat-label">待复习错题</div><div class="stat-value" style="color:#f59e0b">${due.length}</div></div>
+  </div>`;
+
+  // 热力图
+  html += `<div class="card"><div class="card-title">知识点掌握热力图（红黄绿三色预警，点击可练习）</div>`;
+  Object.entries(bySubject).forEach(([sub, items]) => {
+    html += `<div style="margin-bottom:20px"><h4 style="margin-bottom:12px;color:#555">${sub}</h4><div class="heatmap-grid">`;
+    items.forEach(kp => {
+      const lv = kp.mastery < 50 ? 'level-red' : kp.mastery < 75 ? 'level-yellow' : 'level-green';
+      html += `<div class="heatmap-item ${lv}" onclick="startPractice(${kp.id})"><div class="kp-name">${kp.name}</div><div class="kp-score">${kp.mastery}%</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+
+  // 学习趋势 + 学习效率追踪
+  const records = DB.get('practiceRecords', []).filter(r => r.studentId === currentUser.id);
+  const byDate = {};
+  records.forEach(r => {
+    const d = (r.createdAt || '').split('T')[0] || new Date().toISOString().split('T')[0];
+    if (!byDate[d]) byDate[d] = { total: 0, correct: 0, time: 0 };
+    byDate[d].total++;
+    if (r.isCorrect) byDate[d].correct++;
+    byDate[d].time += r.timeSpent || 0;
+  });
+  const dates = Object.keys(byDate).sort();
+
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="card"><div class="card-title">学习趋势（正确率）</div><div id="trendChart" class="chart-container"></div></div>
+    <div class="card"><div class="card-title">学习效率追踪（投入时长vs正确率）</div><div id="effChart" class="chart-container"></div></div>
+  </div>`;
+
+  setTimeout(() => {
+    const tEl = document.getElementById('trendChart');
+    if (tEl && dates.length) {
+      echarts.init(tEl).setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: dates },
+        yAxis: { type: 'value', name: '正确率(%)', max: 100 },
+        series: [{ type: 'line', smooth: true, data: dates.map(d => Math.round(byDate[d].correct / byDate[d].total * 100)), areaStyle: { color: 'rgba(102,126,234,.2)' }, lineStyle: { color: '#667eea' }, itemStyle: { color: '#667eea' } }],
+        grid: { left: 50, right: 20, top: 20, bottom: 30 },
+      });
+    } else if (tEl) tEl.innerHTML = '<div class="empty-state">暂无数据</div>';
+    const eEl = document.getElementById('effChart');
+    if (eEl && dates.length) {
+      echarts.init(eEl).setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['学习时长(分钟)', '正确率(%)'], top: 0 },
+        xAxis: { type: 'category', data: dates },
+        yAxis: [{ type: 'value', name: '分钟' }, { type: 'value', name: '正确率(%)', max: 100 }],
+        series: [
+          { name: '学习时长(分钟)', type: 'bar', data: dates.map(d => Math.round(byDate[d].time / 60)), itemStyle: { color: '#ff9a56' } },
+          { name: '正确率(%)', type: 'line', yAxisIndex: 1, smooth: true, data: dates.map(d => Math.round(byDate[d].correct / byDate[d].total * 100)), itemStyle: { color: '#667eea' } },
+        ],
+        grid: { left: 50, right: 50, top: 40, bottom: 30 },
+      });
+    } else if (eEl) eEl.innerHTML = '<div class="empty-state">暂无数据</div>';
+  }, 50);
+
+  // 今日待复习推荐
+  if (due.length) {
+    html += `<div class="card"><div class="card-title">今日待复习（艾宾浩斯遗忘曲线推送）</div>`;
+    html += '<div class="wrong-list">';
+    due.slice(0, 5).forEach(w => {
+      const q = DB.get('questions', []).find(x => x.id === w.questionId);
+      if (q) html += `<div class="wrong-item"><div class="wrong-header"><span class="wrong-tag">${q.subject}</span><span style="font-size:12px;color:#999">掌握度${w.masterLevel || 0}/5</span></div><div class="wrong-content">${q.content}</div><div style="margin-top:8px"><button class="btn btn-sm btn-primary-inline" onclick="reviewWrong(${w.id})">标记已复习</button></div></div>`;
+    });
+    html += '</div></div>';
+  }
+
+  return html;
+}
+
+function startPractice(kpId) {
+  const kp = DB.get('knowledge', []).find(k => k.id === kpId);
+  let qs = DB.get('questions', []).filter(q => q.knowledgeIds?.includes(kpId));
+  if (qs.length === 0) qs = DB.get('questions', []).filter(q => q.subject === kp.subject);
+  if (qs.length === 0) { alert('该知识点暂无题目'); return; }
+  pageState = { questions: qs.slice(0, 5), kp, title: '练习：' + kp.name };
+  navigate('practice', pageState);
+}
+
+function renderStudentWrong() {
+  const wrongs = DB.get('wrongs', []).filter(w => w.studentId === currentUser.id);
+  const filter = pageState.wrongFilter || 'all';
+  let list = filter === 'due' ? wrongs.filter(w => !w.nextReview || new Date(w.nextReview) <= new Date()) : wrongs;
+  list.sort((a, b) => new Date(a.nextReview || 0) - new Date(b.nextReview || 0));
+
+  let html = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div class="card-title" style="margin-bottom:0">我的错题本（${wrongs.length}道）</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm ${filter === 'all' ? 'btn-primary-inline' : 'btn-outline'}" onclick="setWrongFilter('all')">全部</button>
+      <button class="btn btn-sm ${filter === 'due' ? 'btn-primary-inline' : 'btn-outline'}" onclick="setWrongFilter('due')">待复习</button>
+      <button class="btn btn-sm btn-success" onclick="showAddWrong()">📷 拍照录入</button>
+      <button class="btn btn-sm btn-outline" onclick="showManualWrong()">✏️ 手动录入</button>
+    </div></div>`;
+  if (list.length === 0) html += '<div class="empty-state">暂无错题，继续加油！</div>';
+  else {
+    html += '<div class="wrong-list">';
+    list.forEach(w => {
+      const q = DB.get('questions', []).find(x => x.id === w.questionId) || w.manualQuestion;
+      if (!q) return;
+      html += `<div class="wrong-item">
+        <div class="wrong-header"><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="wrong-tag">${q.subject || '未分类'}</span></div><span style="font-size:12px;color:#999">掌握度:${w.masterLevel || 0}/5</span></div>
+        <div class="wrong-content">${q.content}</div>
+        <div class="wrong-meta"><span>你的答案:${w.wrongAnswer || '-'}</span><span>正确答案:${q.answer || '-'}</span><span>复习次数:${w.reviewCount || 0}</span></div>
+        ${q.analysis ? `<div style="margin-top:8px;font-size:13px;color:#666;background:#f8f9ff;padding:10px;border-radius:6px">解析：${q.analysis}</div>` : ''}
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-success" onclick="reviewWrong(${w.id})">标记已复习</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteWrong(${w.id})">删除</button>
+        </div></div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // 拍照录入弹窗
+  if (pageState.showCamera) html += renderCameraModal();
+  if (pageState.showManualWrong) html += renderManualWrongModal();
+  return html;
+}
+
+function renderCameraModal() {
+  const step = pageState.cameraStep || 1;
+  return `<div class="modal-overlay" onclick="closeCamera()"><div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header"><span>拍照录入错题</span><span style="cursor:pointer" onclick="closeCamera()">✕</span></div>
+    <div class="modal-body">
+      <div class="ocr-steps">
+        <div class="ocr-step ${step >= 1 ? (step > 1 ? 'done' : 'active') : ''}">① 拍照/上传</div>
+        <div class="ocr-step ${step >= 2 ? (step > 2 ? 'done' : 'active') : ''}">② 智能识别</div>
+        <div class="ocr-step ${step >= 3 ? 'active' : ''}">③ 一键归档</div>
+      </div>
+      ${step === 1 ? `
+        <div class="camera-box" id="cameraBox"><video id="cameraVideo" autoplay playsinline style="display:none"></video><img id="cameraImg" style="display:none" /></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-primary-inline" onclick="startCamera()">📷 调用摄像头</button>
+          <label class="btn btn-outline" style="display:inline-block">📁 选择图片<input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleImageUpload(event)" /></label>
+        </div>
+        <p style="font-size:12px;color:#999;margin-top:12px">提示：OCR识别需联网，如无法识别可手动录入</p>
+      ` : step === 2 ? `
+        <div style="text-align:center;padding:20px"><div style="font-size:40px;margin-bottom:12px">🔍</div><p>正在识别题目内容...</p></div>
+      ` : `
+        <div class="form-group"><label>题目内容</label><textarea id="ocrContent" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e0e6ed;min-height:80px">${pageState.ocrText || ''}</textarea></div>
+        <div class="form-group"><label>学科</label><select id="ocrSubject"><option>数学</option><option>物理</option><option>化学</option><option>英语</option></select></div>
+        <div class="form-group"><label>你的错误答案</label><input id="ocrWrongAns" /></div>
+        <div class="form-group"><label>正确答案</label><input id="ocrRightAns" /></div>
+        <button class="btn btn-success" onclick="saveOcrWrong()">一键归档到错题本</button>
+      `}
+    </div>
+  </div></div>`;
+}
+
+let cameraStream = null;
+function showAddWrong() { pageState.showCamera = true; pageState.cameraStep = 1; render(); }
+function closeCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  pageState.showCamera = false; render();
+}
+function startCamera() {
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(stream => {
+    cameraStream = stream;
+    const v = document.getElementById('cameraVideo');
+    if (v) { v.srcObject = stream; v.style.display = 'block'; }
+    setTimeout(() => {
+      const canvas = document.createElement('canvas');
+      const v = document.getElementById('cameraVideo');
+      if (v && v.videoWidth) {
+        canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+        canvas.getContext('2d').drawImage(v, 0, 0);
+        pageState.capturedImage = canvas.toDataURL('image/jpeg', 0.7);
+      }
+      if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+      pageState.cameraStep = 2; render();
+      setTimeout(() => {
+        pageState.cameraStep = 3;
+        pageState.ocrText = '（拍照识别结果，请核对或修改）\n请在此处填写题目内容...';
+        render();
+      }, 1500);
+    }, 1500);
+  }).catch(() => {
+    alert('无法访问摄像头，请使用"选择图片"上传，或手动录入');
+  });
+}
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pageState.capturedImage = reader.result;
+    pageState.cameraStep = 2; render();
+    setTimeout(() => { pageState.cameraStep = 3; pageState.ocrText = '（图片识别结果，请核对或修改）\n请在此处填写题目内容...'; render(); }, 1500);
+  };
+  reader.readAsDataURL(file);
+}
+function saveOcrWrong() {
+  const content = document.getElementById('ocrContent').value.trim();
+  const subject = document.getElementById('ocrSubject').value;
+  const wrongAns = document.getElementById('ocrWrongAns').value;
+  const rightAns = document.getElementById('ocrRightAns').value;
+  if (!content) { alert('请填写题目内容'); return; }
+  const wrongs = DB.get('wrongs', []);
+  wrongs.push({
+    id: DB.nextId('wrongs'), studentId: currentUser.id, questionId: null,
+    manualQuestion: { content, subject, answer: rightAns, analysis: '' },
+    wrongAnswer: wrongAns, masterLevel: 0, reviewCount: 0,
+    nextReview: new Date(Date.now() + 86400000).toISOString(),
+  });
+  DB.set('wrongs', wrongs);
+  pageState.showCamera = false;
+  render();
+  alert('已归档到错题本');
+}
+
+function showManualWrong() { pageState.showManualWrong = true; render(); }
+function renderManualWrongModal() {
+  return `<div class="modal-overlay" onclick="closeManualWrong()"><div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header"><span>手动录入错题</span><span style="cursor:pointer" onclick="closeManualWrong()">✕</span></div>
+    <div class="modal-body">
+      <div class="form-group"><label>学科</label><select id="mSubject"><option>数学</option><option>物理</option><option>化学</option><option>英语</option></select></div>
+      <div class="form-group"><label>题目内容</label><textarea id="mContent" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e0e6ed;min-height:80px"></textarea></div>
+      <div class="form-group"><label>你的错误答案</label><input id="mWrong" /></div>
+      <div class="form-group"><label>正确答案</label><input id="mRight" /></div>
+      <div class="form-group"><label>解析（选填）</label><textarea id="mAnalysis" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e0e6ed;min-height:60px"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeManualWrong()">取消</button><button class="btn btn-primary-inline" onclick="saveManualWrong()">保存</button></div>
+  </div></div>`;
+}
+function closeManualWrong() { pageState.showManualWrong = false; render(); }
+function saveManualWrong() {
+  const content = document.getElementById('mContent').value.trim();
+  if (!content) { alert('请填写题目内容'); return; }
+  const wrongs = DB.get('wrongs', []);
+  wrongs.push({
+    id: DB.nextId('wrongs'), studentId: currentUser.id, questionId: null,
+    manualQuestion: { content, subject: document.getElementById('mSubject').value, answer: document.getElementById('mRight').value, analysis: document.getElementById('mAnalysis').value },
+    wrongAnswer: document.getElementById('mWrong').value, masterLevel: 0, reviewCount: 0,
+    nextReview: new Date(Date.now() + 86400000).toISOString(),
+  });
+  DB.set('wrongs', wrongs);
+  pageState.showManualWrong = false;
+  render();
+}
+
+function setWrongFilter(f) { pageState.wrongFilter = f; render(); }
+function reviewWrong(id) {
+  const wrongs = DB.get('wrongs', []);
+  const w = wrongs.find(x => x.id === id);
+  if (w) {
+    w.masterLevel = Math.min(5, (w.masterLevel || 0) + 1);
+    w.reviewCount = (w.reviewCount || 0) + 1;
+    w.nextReview = new Date(Date.now() + [1, 2, 4, 7, 15, 30][w.masterLevel] * 86400000).toISOString();
+    DB.set('wrongs', wrongs);
+  }
+  render();
+}
+function deleteWrong(id) {
+  if (!confirm('确定删除？')) return;
+  DB.set('wrongs', DB.get('wrongs', []).filter(w => w.id !== id));
+  render();
+}
+
+function renderStudentTasks() {
+  const cls = getStudentClass();
+  const tasks = cls ? DB.get('assignments', []).filter(a => a.classId === cls.id) : [];
+  let html = `<div class="card"><div class="card-title">我的任务</div>`;
+  if (tasks.length === 0) html += '<div class="empty-state">暂无任务，等待老师布置</div>';
+  else {
+    html += '<div class="wrong-list">';
+    tasks.forEach(t => {
+      html += `<div class="wrong-item">
+        <div class="wrong-header"><span style="font-weight:600">${t.title}</span><span class="wrong-tag">${t.type === 'exam' ? '测验' : '练习'}</span></div>
+        <div style="font-size:13px;color:#666;margin-bottom:8px">${t.description || '无描述'}</div>
+        <div class="wrong-meta"><span>题目数:${t.questionIds?.length || 0}</span>${t.deadline ? `<span>截止:${new Date(t.deadline).toLocaleDateString()}</span>` : ''}</div>
+        <div style="margin-top:12px"><button class="btn btn-sm btn-primary-inline" onclick="doTask(${t.id})">开始作答</button></div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function doTask(taskId) {
+  const task = DB.get('assignments', []).find(a => a.id === taskId);
+  const qs = DB.get('questions', []).filter(q => task.questionIds?.includes(q.id));
+  if (!qs.length) { alert('该任务暂无题目'); return; }
+  pageState = { questions: qs, assignmentId: taskId, title: task.title };
+  navigate('practice', pageState);
+}
+
+function renderStudentSettings() {
+  const cls = getStudentClass();
+  return `<div style="max-width:500px">
+    <div class="card"><div class="card-title">个人信息</div>
+      <div style="margin-bottom:12px"><strong>姓名：</strong>${currentUser.realName}</div>
+      <div style="margin-bottom:12px"><strong>账号：</strong>${currentUser.username}</div>
+      <div><strong>身份：</strong>学生</div>
+    </div>
+    <div class="card"><div class="card-title">修改密码</div>
+      <div class="form-group"><label>原密码</label><input id="oldPwd" type="password" /></div>
+      <div class="form-group"><label>新密码</label><input id="newPwd" type="password" /></div>
+      <button class="btn btn-primary-inline" onclick="changePwd()">确认修改</button>
+      <div id="pwdMsg" style="margin-top:12px"></div>
+    </div>
+    <div class="card"><div class="card-title">加入班级</div>
+      <div class="form-group"><label>班级邀请码</label><input id="joinCode" placeholder="如 202602" /></div>
+      <button class="btn btn-primary-inline" onclick="joinClass()">加入</button>
+      <div id="joinMsg" style="margin-top:12px"></div>
+      ${cls ? `<div style="margin-top:12px;font-size:13px;color:#666">当前班级：${cls.className}（${cls.classCode}）</div>` : ''}
+    </div>
+    <div class="card"><div class="card-title">数据管理</div>
+      <p style="font-size:13px;color:#666;margin-bottom:12px">数据存储在当前浏览器，清除浏览器数据会丢失。建议定期导出备份。</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="exportData()">📤 导出数据</button>
+        <label class="btn btn-outline" style="display:inline-block">📥 导入数据<input type="file" accept=".json" style="display:none" onchange="importData(event)" /></label>
+      </div>
+    </div>
+    <button class="btn btn-danger" onclick="logout()">退出登录</button>
+  </div>`;
+}
+
+function changePwd() {
+  const oldP = document.getElementById('oldPwd').value;
+  const newP = document.getElementById('newPwd').value;
+  const msg = document.getElementById('pwdMsg');
+  if (oldP !== currentUser.password) { msg.innerHTML = '<span style="color:#ef4444">原密码错误</span>'; return; }
+  if (newP.length < 6) { msg.innerHTML = '<span style="color:#ef4444">新密码至少6位</span>'; return; }
+  const users = DB.get('users', []);
+  const u = users.find(x => x.id === currentUser.id);
+  u.password = newP; currentUser.password = newP;
+  DB.set('users', users); DB.set('currentUser', currentUser);
+  msg.innerHTML = '<span style="color:#16a34a">修改成功</span>';
+}
+function joinClass() {
+  const code = document.getElementById('joinCode').value.trim();
+  const msg = document.getElementById('joinMsg');
+  const cls = DB.get('classes', []).find(c => c.classCode === code);
+  if (!cls) { msg.innerHTML = '<span style="color:#ef4444">邀请码无效</span>'; return; }
+  const cs = DB.get('classStudents', []);
+  if (!cs.find(c => c.classId === cls.id && c.studentId === currentUser.id)) { cs.push({ classId: cls.id, studentId: currentUser.id }); DB.set('classStudents', cs); }
+  msg.innerHTML = `<span style="color:#16a34a">已加入：${cls.className}</span>`;
+  setTimeout(() => render(), 1000);
+}
+function exportData() {
+  const data = {};
+  ['users', 'classes', 'classStudents', 'knowledge', 'questions', 'wrongs', 'assignments', 'scores', 'practiceRecords'].forEach(k => data[k] = DB.get(k, []));
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'zhiqixincheng_backup_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+}
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      Object.keys(data).forEach(k => DB.set(k, data[k]));
+      alert('导入成功');
+      render();
+    } catch { alert('文件格式错误'); }
+  };
+  reader.readAsText(file);
+}
+
+// ==================== 教师端 ====================
+function renderTeacherLayout() {
+  const cls = getTeacherClass();
+  const navs = [
+    { page: 'teacher-home', label: '🏠 首页' },
+    { page: 'teacher-report', label: '📊 学情报告' },
+    { page: 'teacher-wrong', label: '📝 错题管理' },
+    { page: 'teacher-class', label: '👥 班级管理' },
+    { page: 'teacher-questions', label: '📚 题库' },
+    { page: 'teacher-tasks', label: '📋 任务' },
+  ];
+  return `<nav class="navbar"><div class="navbar-inner">
+    <div class="logo">智启新程（教师端）</div>
+    <div class="nav-menu">${navs.map(n => `<div class="nav-item ${currentPage === n.page ? 'active' : ''}" onclick="navigate('${n.page}')">${n.label}</div>`).join('')}</div>
+    <div class="user-info"><span>${currentUser.realName}（老师）</span>${cls ? `<span style="color:#999">${cls.className}</span>` : ''}<button class="logout-btn" onclick="logout()">退出</button></div>
+  </div></nav><div class="main-content">${renderTeacherPage()}</div>${renderVoiceBtn()}`;
+}
+
+function getTeacherClass() { return DB.get('classes', []).find(c => c.teacherId === currentUser.id); }
+function getClassStudents() {
+  const cls = getTeacherClass();
+  if (!cls) return [];
+  const ids = DB.get('classStudents', []).filter(c => c.classId === cls.id).map(c => c.studentId);
+  return DB.get('users', []).filter(u => ids.includes(u.id));
+}
+
+function renderTeacherPage() {
+  switch (currentPage) {
+    case 'teacher-home': return renderTeacherHome();
+    case 'teacher-report': return renderTeacherReport();
+    case 'teacher-wrong': return renderTeacherWrong();
+    case 'teacher-class': return renderTeacherClass();
+    case 'teacher-questions': return renderTeacherQuestions();
+    case 'teacher-tasks': return renderTeacherTasks();
+    default: return renderTeacherHome();
+  }
+}
+
+// 教师首页 - 三入口
+function renderTeacherHome() {
+  const cls = getTeacherClass();
+  const students = getClassStudents();
+  const wrongs = DB.get('wrongs', []).filter(w => students.some(s => s.id === w.studentId));
+  const tasks = DB.get('assignments', []).filter(a => a.classId === cls?.id);
+  return `<div class="card"><div class="card-title">欢迎，${currentUser.realName}老师</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">班级人数</div><div class="stat-value">${students.length}</div></div>
+      <div class="stat-card"><div class="stat-label">错题总数</div><div class="stat-value" style="color:#ef4444">${wrongs.length}</div></div>
+      <div class="stat-card"><div class="stat-label">已布置任务</div><div class="stat-value" style="color:#667eea">${tasks.length}</div></div>
+    </div></div>
+    <div class="teacher-entries">
+      <div class="entry-card" onclick="navigate('teacher-report')">
+        <div class="entry-icon orange">📊</div>
+        <div class="entry-title">学情报告</div>
+        <div class="entry-desc">班级热力图、学生排行、薄弱点分析</div>
+      </div>
+      <div class="entry-card" onclick="navigate('teacher-wrong')">
+        <div class="entry-icon blue">📝</div>
+        <div class="entry-title">错题管理</div>
+        <div class="entry-desc">查看班级错题、学生错题排行</div>
+      </div>
+      <div class="entry-card" onclick="navigate('teacher-class')">
+        <div class="entry-icon gray">👥</div>
+        <div class="entry-title">班级管理</div>
+        <div class="entry-desc">邀请码、学生列表、成绩导入</div>
+      </div>
+    </div>
+    <div class="card"><div class="card-title">快捷操作</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary-inline" onclick="navigate('teacher-tasks')">📋 布置新任务</button>
+        <button class="btn btn-outline" onclick="navigate('teacher-questions')">📚 管理题库</button>
+        <button class="btn btn-outline" onclick="navigate('teacher-report')">📊 生成学情报告</button>
+      </div></div>`;
+}
+
+function getClassMastery() {
+  const students = getClassStudents();
+  const kps = DB.get('knowledge', []);
+  return kps.map(kp => {
+    const qIds = DB.get('questions', []).filter(q => q.knowledgeIds?.includes(kp.id)).map(q => q.id);
+    let total = 0, correct = 0, count = 0;
+    students.forEach(s => {
+      const rel = DB.get('practiceRecords', []).filter(r => r.studentId === s.id && qIds.includes(r.questionId));
+      if (rel.length) { total += rel.length; correct += rel.filter(r => r.isCorrect).length; count++; }
+    });
+    return { ...kp, mastery: count > 0 ? Math.round(correct / total * 100) : 60, studentCount: students.length };
+  });
+}
+
+function renderTeacherReport() {
+  const students = getClassStudents();
+  const mastery = getClassMastery();
+  const bySubject = {};
+  mastery.forEach(m => { if (!bySubject[m.subject]) bySubject[m.subject] = []; bySubject[m.subject].push(m); });
+  const weak = [...mastery].sort((a, b) => a.mastery - b.mastery).slice(0, 6);
+  const wrongs = DB.get('wrongs', []).filter(w => students.some(s => s.id === w.studentId));
+  const wrongBySub = {};
+  wrongs.forEach(w => {
+    const q = DB.get('questions', []).find(x => x.id === w.questionId);
+    const sub = q?.subject || w.manualQuestion?.subject || '其他';
+    wrongBySub[sub] = (wrongBySub[sub] || 0) + 1;
+  });
+  const avg = mastery.length ? Math.round(mastery.reduce((s, m) => s + m.mastery, 0) / mastery.length) : 0;
+
+  let html = `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">班级人数</div><div class="stat-value">${students.length}</div></div>
+    <div class="stat-card"><div class="stat-label">平均掌握度</div><div class="stat-value" style="color:#667eea">${avg}%</div></div>
+    <div class="stat-card"><div class="stat-label">薄弱知识点</div><div class="stat-value" style="color:#ef4444">${weak.filter(w => w.mastery < 50).length}</div></div>
+    <div class="stat-card"><div class="stat-label">错题总数</div><div class="stat-value" style="color:#f59e0b">${wrongs.length}</div></div>
+  </div>`;
+
+  html += `<div class="card"><div class="card-title">班级知识点掌握热力图</div>`;
+  Object.entries(bySubject).forEach(([sub, items]) => {
+    html += `<div style="margin-bottom:20px"><h4 style="margin-bottom:12px;color:#555">${sub}</h4><div class="heatmap-grid">`;
+    items.forEach(kp => {
+      const lv = kp.mastery < 50 ? 'level-red' : kp.mastery < 75 ? 'level-yellow' : 'level-green';
+      html += `<div class="heatmap-item ${lv}"><div class="kp-name">${kp.name}</div><div class="kp-score">${kp.mastery}%</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+
+  const ranking = students.map(s => {
+    const rec = DB.get('practiceRecords', []).filter(r => r.studentId === s.id);
+    return { name: s.realName, accuracy: rec.length ? Math.round(rec.filter(r => r.isCorrect).length / rec.length * 100) : 0, total: rec.length };
+  }).sort((a, b) => b.accuracy - a.accuracy);
+
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="card"><div class="card-title">学生正确率排行</div><div id="rankChart" class="chart-container"></div></div>
+    <div class="card"><div class="card-title">错题学科分布</div><div id="pieChart" class="chart-container"></div></div>
+  </div>`;
+
+  setTimeout(() => {
+    const rEl = document.getElementById('rankChart');
+    if (rEl && ranking.length) echarts.init(rEl).setOption({
+      tooltip: {}, xAxis: { type: 'category', data: ranking.map(r => r.name) },
+      yAxis: { type: 'value', name: '正确率(%)', max: 100 },
+      series: [{ type: 'bar', data: ranking.map(r => r.accuracy), itemStyle: { color: '#667eea' } }],
+      grid: { left: 50, right: 20, top: 20, bottom: 30 },
+    });
+    const pEl = document.getElementById('pieChart');
+    if (pEl && Object.keys(wrongBySub).length) echarts.init(pEl).setOption({
+      tooltip: { trigger: 'item' }, legend: { bottom: 0 },
+      series: [{ type: 'pie', radius: ['40%', '70%'], data: Object.entries(wrongBySub).map(([name, value]) => ({ name, value })) }],
+    });
+    else if (pEl) pEl.innerHTML = '<div class="empty-state">暂无数据</div>';
+  }, 50);
+
+  html += `<div class="card"><div class="card-title">薄弱知识点 Top 6</div>`;
+  if (weak.length) {
+    html += `<table class="data-table"><thead><tr><th>知识点</th><th>学科</th><th>掌握度</th></tr></thead><tbody>`;
+    weak.forEach((w, i) => { html += `<tr><td>${i + 1}. ${w.name}</td><td>${w.subject}</td><td style="color:${w.mastery < 50 ? '#ef4444' : '#f59e0b'}">${w.mastery}%</td></tr>`; });
+    html += `</tbody></table>`;
+  } else html += '<div class="empty-state">暂无数据</div>';
+  html += '</div>';
+
+  // Excel导入 + 手动录入
+  const scores = DB.get('scores', []).filter(s => students.some(st => st.id === s.studentId));
+  html += `<div class="card"><div class="card-title">成绩管理（支持Excel导入）</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <label class="btn btn-success" style="display:inline-block">📊 导入Excel成绩单<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)" /></label>
+      <span style="font-size:13px;color:#999;align-self:center">表头需包含：姓名/学号、科目、分数、考试名称</span>
+    </div>
+    <div id="excelMsg"></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid #eee">
+      <select id="scoreStudent" style="padding:10px;border-radius:8px;border:1px solid #e0e6ed">${students.map(s => `<option value="${s.id}">${s.realName}</option>`).join('')}</select>
+      <input id="scoreSubject" placeholder="科目" style="padding:10px;border-radius:8px;border:1px solid #e0e6ed;width:100px" />
+      <input id="scoreExam" placeholder="考试名称" style="padding:10px;border-radius:8px;border:1px solid #e0e6ed;width:120px" />
+      <input id="scoreValue" type="number" placeholder="分数" style="padding:10px;border-radius:8px;border:1px solid #e0e6ed;width:80px" />
+      <button class="btn btn-primary-inline" onclick="addScore()">手动添加</button>
+    </div>`;
+  if (scores.length) {
+    html += `<table class="data-table" style="margin-top:16px"><thead><tr><th>学生</th><th>科目</th><th>考试</th><th>分数</th></tr></thead><tbody>`;
+    scores.slice(-20).reverse().forEach(s => {
+      const st = students.find(x => x.id === s.studentId);
+      html += `<tr><td>${st?.realName || '-'}</td><td>${s.subject}</td><td>${s.examName}</td><td>${s.score}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function importExcel(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      const students = getClassStudents();
+      let success = 0, failed = 0;
+      const scores = DB.get('scores', []);
+      rows.forEach(row => {
+        const name = row['姓名'] || row['name'] || row['学生'] || '';
+        const username = row['学号'] || row['username'] || '';
+        const subject = row['科目'] || row['学科'] || row['subject'] || '综合';
+        const score = parseFloat(row['分数'] || row['score'] || 0);
+        const examName = row['考试名称'] || row['考试'] || row['exam'] || '日常测试';
+        let student = null;
+        if (username) student = students.find(s => s.username === username);
+        if (!student && name) student = students.find(s => s.realName === name);
+        if (student && score > 0) {
+          scores.push({ id: DB.nextId('scores'), studentId: student.id, subject, examName, score, fullScore: 100, createdAt: new Date().toISOString() });
+          success++;
+        } else failed++;
+      });
+      DB.set('scores', scores);
+      document.getElementById('excelMsg').innerHTML = `<span style="color:#16a34a">导入成功${success}条，失败${failed}条</span>`;
+      setTimeout(() => render(), 1500);
+    } catch (err) {
+      document.getElementById('excelMsg').innerHTML = `<span style="color:#ef4444">导入失败：${err.message}</span>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function addScore() {
+  const studentId = parseInt(document.getElementById('scoreStudent').value);
+  const subject = document.getElementById('scoreSubject').value.trim();
+  const examName = document.getElementById('scoreExam').value.trim();
+  const score = parseInt(document.getElementById('scoreValue').value);
+  if (!subject || !examName || !score) { alert('请填写完整'); return; }
+  const scores = DB.get('scores', []);
+  scores.push({ id: DB.nextId('scores'), studentId, subject, examName, score, fullScore: 100, createdAt: new Date().toISOString() });
+  DB.set('scores', scores);
+  render();
+}
+
+function renderTeacherWrong() {
+  const students = getClassStudents();
+  const wrongs = DB.get('wrongs', []).filter(w => students.some(s => s.id === w.studentId));
+  const ranking = students.map(s => ({ name: s.realName, count: wrongs.filter(w => w.studentId === s.id).length })).sort((a, b) => b.count - a.count);
+  let html = `<div class="card"><div class="card-title">班级错题（共${wrongs.length}道）</div>`;
+  if (wrongs.length === 0) html += '<div class="empty-state">暂无错题</div>';
+  else {
+    html += '<div class="wrong-list">';
+    wrongs.forEach(w => {
+      const q = DB.get('questions', []).find(x => x.id === w.questionId) || w.manualQuestion;
+      const s = students.find(x => x.id === w.studentId);
+      if (!q) return;
+      html += `<div class="wrong-item">
+        <div class="wrong-header"><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="wrong-tag">${q.subject || '未分类'}</span><span class="wrong-tag">${s?.realName || ''}</span></div></div>
+        <div class="wrong-content">${q.content}</div>
+        <div class="wrong-meta"><span>正确答案:${q.answer || '-'}</span><span>掌握度:${w.masterLevel || 0}/5</span></div>
+        ${q.analysis ? `<div style="margin-top:8px;font-size:13px;color:#666;background:#f8f9ff;padding:10px;border-radius:6px">解析：${q.analysis}</div>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  html += `<div class="card"><div class="card-title">学生错题数量排行</div>
+    <table class="data-table"><thead><tr><th>排名</th><th>学生</th><th>错题数</th></tr></thead><tbody>
+    ${ranking.map((r, i) => `<tr><td>${i + 1}</td><td>${r.name}</td><td>${r.count}</td></tr>`).join('')}
+    </tbody></table></div>`;
+  return html;
+}
+
+function renderTeacherClass() {
+  const cls = getTeacherClass();
+  const students = getClassStudents();
+  return `<div class="card"><div class="card-title">班级信息</div>
+    <div style="display:flex;gap:40px;align-items:center;flex-wrap:wrap">
+      <div><div style="font-size:14px;color:#999;margin-bottom:4px">班级名称</div><div style="font-size:20px;font-weight:600">${cls?.className || '-'}</div></div>
+      <div><div style="font-size:14px;color:#999;margin-bottom:4px">邀请码</div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px;font-weight:700;color:#667eea;letter-spacing:2px">${cls?.classCode || '-'}</span>
+        <button class="btn btn-sm btn-outline" onclick="copyCode()">复制</button></div></div>
+      <div><div style="font-size:14px;color:#999;margin-bottom:4px">学生人数</div><div style="font-size:20px;font-weight:600">${students.length}</div></div>
+    </div>
+    <p style="margin-top:16px;font-size:13px;color:#666">将邀请码分享给学生，学生注册时填写即可加入班级。</p></div>
+    <div class="card"><div class="card-title">学生列表</div>
+    ${students.length ? `<table class="data-table"><thead><tr><th>序号</th><th>姓名</th><th>账号</th></tr></thead><tbody>
+      ${students.map((s, i) => `<tr><td>${i + 1}</td><td>${s.realName}</td><td>${s.username}</td></tr>`).join('')}
+    </tbody></table>` : '<div class="empty-state">暂无学生</div>'}</div>`;
+}
+function copyCode() { const cls = getTeacherClass(); navigator.clipboard?.writeText(cls?.classCode || ''); alert('邀请码已复制：' + cls?.classCode); }
+
+function renderTeacherQuestions() {
+  const questions = DB.get('questions', []);
+  const knowledge = DB.get('knowledge', []);
+  let html = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div class="card-title" style="margin-bottom:0">题库管理（共${questions.length}题）</div>
+    <button class="btn btn-primary-inline" onclick="showAddQuestion()">+ 添加题目</button></div>`;
+  if (questions.length === 0) html += '<div class="empty-state">暂无题目</div>';
+  else {
+    html += `<table class="data-table"><thead><tr><th>ID</th><th>学科</th><th>题型</th><th>题目</th><th>答案</th><th>操作</th></tr></thead><tbody>`;
+    questions.forEach(q => {
+      html += `<tr><td>${q.id}</td><td>${q.subject}</td><td>${q.type === 'single' ? '单选' : '填空'}</td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.content}</td>
+        <td>${q.answer}</td><td><button class="btn btn-sm btn-danger" onclick="deleteQuestion(${q.id})">删除</button></td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += '</div>';
+  if (pageState.showAddQuestion) {
+    html += `<div class="modal-overlay" onclick="closeAddQuestion()"><div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header"><span>添加题目</span><span style="cursor:pointer" onclick="closeAddQuestion()">✕</span></div>
+      <div class="modal-body">
+        <div class="form-group"><label>学科</label><select id="qSubject"><option>数学</option><option>物理</option><option>化学</option><option>英语</option></select></div>
+        <div class="form-group"><label>题目内容</label><textarea id="qContent" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e0e6ed;min-height:80px"></textarea></div>
+        <div class="form-group"><label>选项A</label><input id="qOptA" /></div>
+        <div class="form-group"><label>选项B</label><input id="qOptB" /></div>
+        <div class="form-group"><label>选项C</label><input id="qOptC" /></div>
+        <div class="form-group"><label>选项D</label><input id="qOptD" /></div>
+        <div class="form-group"><label>正确答案（A/B/C/D）</label><input id="qAnswer" /></div>
+        <div class="form-group"><label>解析</label><textarea id="qAnalysis" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e0e6ed;min-height:60px"></textarea></div>
+        <div class="form-group"><label>关联知识点</label><select id="qKp">${knowledge.map(k => `<option value="${k.id}">${k.subject} - ${k.name}</option>`).join('')}</select></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeAddQuestion()">取消</button><button class="btn btn-primary-inline" onclick="saveQuestion()">保存</button></div>
+    </div></div>`;
+  }
+  return html;
+}
+function showAddQuestion() { pageState.showAddQuestion = true; render(); }
+function closeAddQuestion() { pageState.showAddQuestion = false; render(); }
+function saveQuestion() {
+  const content = document.getElementById('qContent').value.trim();
+  const answer = document.getElementById('qAnswer').value.trim().toUpperCase();
+  if (!content || !answer) { alert('请填写题目和答案'); return; }
+  const questions = DB.get('questions', []);
+  questions.push({
+    id: DB.nextId('questions'), subject: document.getElementById('qSubject').value, type: 'single', difficulty: 'medium',
+    content, options: { A: document.getElementById('qOptA').value, B: document.getElementById('qOptB').value, C: document.getElementById('qOptC').value, D: document.getElementById('qOptD').value },
+    answer, analysis: document.getElementById('qAnalysis').value, knowledgeIds: [parseInt(document.getElementById('qKp').value)],
+  });
+  DB.set('questions', questions);
+  pageState.showAddQuestion = false;
+  render();
+}
+function deleteQuestion(id) { if (!confirm('确定删除？')) return; DB.set('questions', DB.get('questions', []).filter(q => q.id !== id)); render(); }
+
+function renderTeacherTasks() {
+  const cls = getTeacherClass();
+  const tasks = DB.get('assignments', []).filter(a => a.classId === cls?.id);
+  const questions = DB.get('questions', []);
+  let html = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div class="card-title" style="margin-bottom:0">任务布置</div>
+    <button class="btn btn-primary-inline" onclick="showAddTask()">+ 新建任务</button></div>`;
+  if (tasks.length === 0) html += '<div class="empty-state">暂无任务</div>';
+  else {
+    html += '<div class="wrong-list">';
+    tasks.forEach(t => {
+      html += `<div class="wrong-item">
+        <div class="wrong-header"><span style="font-weight:600">${t.title}</span><span class="wrong-tag">${t.type === 'exam' ? '测验' : '练习'}</span></div>
+        <div style="font-size:13px;color:#666;margin-bottom:8px">${t.description || '无描述'}</div>
+        <div class="wrong-meta"><span>题目数:${t.questionIds?.length || 0}</span></div>
+        <div style="margin-top:12px"><button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})">删除</button></div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  if (pageState.showAddTask) {
+    html += `<div class="modal-overlay" onclick="closeAddTask()"><div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header"><span>新建任务</span><span style="cursor:pointer" onclick="closeAddTask()">✕</span></div>
+      <div class="modal-body">
+        <div class="form-group"><label>任务标题</label><input id="tTitle" /></div>
+        <div class="form-group"><label>任务描述</label><input id="tDesc" /></div>
+        <div class="form-group"><label>选择题目（已选 <span id="tCount">0</span> 题）</label>
+          <div style="max-height:200px;overflow-y:auto;border:1px solid #e0e6ed;border-radius:8px;padding:8px">
+            ${questions.map(q => `<div style="padding:6px;cursor:pointer" onclick="toggleTaskQ(${q.id},this)"><input type="checkbox" class="taskQ" value="${q.id}" style="margin-right:8px" /><span style="font-size:13px">[${q.subject}] ${q.content.substring(0, 50)}...</span></div>`).join('')}
+          </div></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeAddTask()">取消</button><button class="btn btn-primary-inline" onclick="saveTask()">发布</button></div>
+    </div></div>`;
+  }
+  return html;
+}
+function showAddTask() { pageState.showAddTask = true; render(); }
+function closeAddTask() { pageState.showAddTask = false; render(); }
+function toggleTaskQ(id, el) {
+  const cb = el.querySelector('input');
+  cb.checked = !cb.checked;
+  el.style.background = cb.checked ? '#eef1ff' : 'transparent';
+  document.getElementById('tCount').textContent = document.querySelectorAll('.taskQ:checked').length;
+}
+function saveTask() {
+  const title = document.getElementById('tTitle').value.trim();
+  if (!title) { alert('请填写标题'); return; }
+  const ids = Array.from(document.querySelectorAll('.taskQ:checked')).map(c => parseInt(c.value));
+  if (!ids.length) { alert('请至少选择一道题'); return; }
+  const cls = getTeacherClass();
+  const tasks = DB.get('assignments', []);
+  tasks.push({ id: DB.nextId('assignments'), classId: cls.id, teacherId: currentUser.id, title, description: document.getElementById('tDesc').value, type: 'practice', questionIds: ids, createdAt: new Date().toISOString() });
+  DB.set('assignments', tasks);
+  pageState.showAddTask = false;
+  render();
+  alert('任务已发布，学生端可查看并作答');
+}
+function deleteTask(id) { if (!confirm('确定删除？')) return; DB.set('assignments', DB.get('assignments', []).filter(t => t.id !== id)); render(); }
+
+// ==================== 做题页 ====================
+function renderPractice() {
+  const questions = pageState.questions || [];
+  const idx = pageState.pIdx || 0;
+  const answers = pageState.answers || {};
+  const submitted = pageState.submitted;
+  if (!questions.length) return `<div style="padding:40px;text-align:center"><p>没有题目</p><button class="btn btn-primary-inline" style="margin-top:16px" onclick="navigate('${currentUser.role === 'teacher' ? 'teacher-tasks' : 'student-learning'}')">返回</button></div>`;
+  if (submitted) {
+    const correct = questions.filter(q => answers[q.id] === q.answer).length;
+    let html = `<div class="practice-page"><div class="card"><div class="card-title">练习结果</div>
+      <div style="text-align:center;padding:20px">
+        <div style="font-size:48px;font-weight:700;color:${correct === questions.length ? '#16a34a' : '#667eea'}">${correct}/${questions.length}</div>
+        <div style="color:#666;margin-top:8px">${correct === questions.length ? '太棒了，全部正确！' : `正确率 ${Math.round(correct / questions.length * 100)}%`}</div>
+      </div>`;
+    questions.forEach((q, i) => {
+      const isC = answers[q.id] === q.answer;
+      html += `<div style="padding:16px;margin-bottom:12px;border-radius:8px;background:${isC ? '#f0fdf4' : '#fef2f2'}">
+        <div style="font-weight:600;margin-bottom:8px">${i + 1}. ${q.content}</div>
+        <div style="font-size:14px;margin-bottom:4px">你的答案: <span style="color:${isC ? '#16a34a' : '#ef4444'};font-weight:600">${answers[q.id] || '未作答'}</span></div>
+        <div style="font-size:14px;margin-bottom:4px">正确答案: <span style="color:#16a34a;font-weight:600">${q.answer}</span></div>
+        ${q.analysis ? `<div style="font-size:13px;color:#666;margin-top:8px;background:white;padding:10px;border-radius:6px">解析：${q.analysis}</div>` : ''}
+      </div>`;
+    });
+    html += `<button class="btn btn-primary-inline" style="margin-top:16px" onclick="navigate('${currentUser.role === 'teacher' ? 'teacher-tasks' : 'student-learning'}')">返回</button></div></div>`;
+    return html;
+  }
+  const q = questions[idx];
+  const options = q.options || {};
+  return `<div class="practice-page"><div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:0">${pageState.title || '练习'}</div>
+      <span style="color:#666">${idx + 1} / ${questions.length}</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${((idx + 1) / questions.length) * 100}%"></div></div>
+    <div style="margin-bottom:16px"><span class="wrong-tag">${q.subject}</span>${q.difficulty ? `<span class="wrong-tag" style="margin-left:8px">${q.difficulty}</span>` : ''}</div>
+    <div style="font-size:16px;line-height:1.8;margin-bottom:24px">${q.content}</div>
+    <div>${Object.entries(options).map(([k, v]) => `<div class="option-item ${answers[q.id] === k ? 'selected' : ''}" onclick="selectPracticeAnswer('${k}')"><strong>${k}.</strong> ${v}</div>`).join('')}</div>
+    <div style="display:flex;justify-content:space-between;margin-top:24px">
+      <button class="btn btn-outline" onclick="prevPractice()" ${idx === 0 ? 'disabled' : ''}>上一题</button>
+      ${idx < questions.length - 1 ? `<button class="btn btn-primary-inline" onclick="nextPractice()">下一题</button>` : `<button class="btn btn-success" onclick="submitPractice()">提交答案</button>`}
+    </div></div></div>`;
+}
+function selectPracticeAnswer(key) {
+  const questions = pageState.questions;
+  const idx = pageState.pIdx || 0;
+  const answers = pageState.answers || {};
+  answers[questions[idx].id] = key;
+  pageState.answers = answers;
+  render();
+}
+function nextPractice() { pageState.pIdx = (pageState.pIdx || 0) + 1; render(); }
+function prevPractice() { pageState.pIdx = Math.max(0, (pageState.pIdx || 0) - 1); render(); }
+function submitPractice() {
+  const questions = pageState.questions;
+  const answers = pageState.answers || {};
+  const startTime = pageState.startTime || Date.now();
+  const timeSpent = Math.round((Date.now() - startTime) / 1000);
+  const records = questions.map(q => ({
+    id: Date.now() + Math.random(), studentId: currentUser.id, questionId: q.id, subject: q.subject,
+    isCorrect: answers[q.id] === q.answer, studentAnswer: answers[q.id] || '', timeSpent: Math.round(timeSpent / questions.length),
+    source: pageState.assignmentId ? 'assignment' : 'free', assignmentId: pageState.assignmentId || null, createdAt: new Date().toISOString(),
+  }));
+  const allRecords = DB.get('practiceRecords', []);
+  allRecords.push(...records);
+  DB.set('practiceRecords', allRecords);
+  const wrongs = DB.get('wrongs', []);
+  records.filter(r => !r.isCorrect).forEach(r => {
+    if (!wrongs.find(w => w.studentId === r.studentId && w.questionId === r.questionId)) {
+      wrongs.push({ id: DB.nextId('wrongs'), studentId: r.studentId, questionId: r.questionId, wrongAnswer: r.studentAnswer, masterLevel: 0, reviewCount: 0, nextReview: new Date(Date.now() + 86400000).toISOString() });
+    }
+  });
+  DB.set('wrongs', wrongs);
+  pageState.submitted = true;
+  render();
+}
+
+// ==================== 语音按钮 ====================
+function renderVoiceBtn() { return `<button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="语音助手">🎤</button>`; }
+let voiceRecognition = null;
+function toggleVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('当前浏览器不支持语音识别，请使用Chrome浏览器'); return; }
+  if (voiceRecognition) { voiceRecognition.stop(); voiceRecognition = null; return; }
+  voiceRecognition = new SR();
+  voiceRecognition.lang = 'zh-CN';
+  voiceRecognition.onstart = () => document.getElementById('voiceBtn')?.classList.add('listening');
+  voiceRecognition.onend = () => { document.getElementById('voiceBtn')?.classList.remove('listening'); voiceRecognition = null; };
+  voiceRecognition.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    // 简单语音指令
+    if (text.includes('报告') || text.includes('学情')) { navigate(currentUser.role === 'teacher' ? 'teacher-report' : 'student-learning'); }
+    else if (text.includes('错题')) { navigate(currentUser.role === 'teacher' ? 'teacher-wrong' : 'student-wrong'); }
+    else if (text.includes('班级') || text.includes('管理')) { navigate('teacher-class'); }
+    else if (text.includes('任务')) { navigate(currentUser.role === 'teacher' ? 'teacher-tasks' : 'student-tasks'); }
+    else { alert('识别到语音：' + text + '\n支持指令：生成报告、查看错题、班级管理、布置任务'); }
+  };
+  voiceRecognition.start();
+}
+
+function bindStudentEvents() {}
+function bindTeacherEvents() {}
+
+// 记录做题开始时间
+const origNavigate = navigate;
+navigate = function(page, state) {
+  if (page === 'practice' && state && state.questions) state.startTime = Date.now();
+  origNavigate(page, state);
+};
+
+render();
+</script>
+</body>
+</html>
